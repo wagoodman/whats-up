@@ -231,8 +231,8 @@ def fetch_current_area():
 @prefect.task
 def fetch_above_aircraft(area: position.Area):
     logger = prefect.context.get("logger")
-    username = os.environ['OPENSKY_USERNAME'] or Secret("opensky_username").get()
-    password = os.environ['OPENSKY_PASSWORD'] or Secret("opensky_password").get()
+    username = os.environ.get('OPENSKY_USERNAME') or Secret("opensky_username").get()
+    password = os.environ.get('OPENSKY_PASSWORD') or Secret("opensky_password").get()
 
     if username == None or len(username) == 0:
         raise ValueError("no username provided")
