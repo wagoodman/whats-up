@@ -261,8 +261,8 @@ def update_display(ac_vectors):
 
     # log to inky screen service
     with ServerProxy("http://swag-pi-1.lan:5000/", allow_none=True) as proxy:
-        proxy.register_buffer("title", "upperleft", 26)
-        proxy.register_buffer("whatsup", "centerleft", 50)
+        proxy.register_buffer("title", "upperleft", 22)
+        proxy.register_buffer("whatsup", "centerleft", 45)
         proxy.register_buffer("aircraft", "upperright", 12)
         proxy.clear_buffer("whatsup")
         proxy.clear_buffer("aircraft")
@@ -271,13 +271,13 @@ def update_display(ac_vectors):
 
     ac_with_callsigns = [ac for ac in ac_vectors if ac.callsign != None]
 
-    proxy.update_row("whatsup", "0", f" {len(ac_with_callsigns)}")
+    proxy.update_row("whatsup", "0", f"  {len(ac_with_callsigns)}")
 
     rows = []
     cur_row = []
     for ac in ac_with_callsigns:
         cur_row.append(ac.callsign)
-        if len(cur_row) == 2:
+        if len(cur_row) == 3:
             rows.append('  '.join(cur_row))
             cur_row = []
     
