@@ -261,7 +261,7 @@ def update_display(ac_vectors):
 
     # log to inky screen service
     with ServerProxy("http://swag-pi-1.lan:5000/", allow_none=True) as proxy:
-        proxy.register_buffer("whatsup", "centerleft", 26)
+        proxy.register_buffer("whatsup", "centerleft", 32)
         proxy.register_buffer("aircraft", "upperright", 12)
         proxy.clear_buffer("whatsup")
         proxy.clear_buffer("aircraft")
