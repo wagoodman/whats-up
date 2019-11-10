@@ -6,9 +6,9 @@ import pathlib
 import collections
 
 import geocoder
-import prefect
 import toml
-
+import prefect
+from prefect.client import Secret
 
 
 ### TMP TMP TMP
@@ -114,7 +114,8 @@ from datetime import datetime
 from collections import defaultdict, namedtuple
 import time
 
-import position
+# import position
+# import opensky
 
 logger = logging.getLogger('opensky_api')
 logger.addHandler(logging.NullHandler())
@@ -196,9 +197,10 @@ class OpenSkyApi(object):
 
 # to prevent the need to change imports/package roots
 
-class posision:
+class position:
     Position = Position
     surrounding_area = surrounding_area
+    Area = Area
 
 ### MAIN
 
@@ -222,9 +224,16 @@ def fetch_current_area():
 @prefect.task
 def fetch_above_aircraft(area: position.Area):
     logger = prefect.context.get("logger")
-    secrets = prefect.context.secrets
+    username = Secret("opensky_username").get()
+    password = Secret("opensky_password").get()
 
-    client = opensky.OpenSkyApi(password=secrets['opensky_password'], username=secrets['opensky_username'])
+    if username == None or len(username) == 0:
+        raise ValueError("no username provided")
+
+    if password == None or len(password) == 0:
+        raise ValueError("no password provided")
+
+    client = opensky.OpenSkyApi(username=username, password=password)
     result = client.get_states(bbox=area)
 
     if result is None:
@@ -270,6 +279,10 @@ def python_pip_requirements_from_project(loose=True) -> list:
             packages.append(f"{name}=={version}")
     return packages
 
+def python_pip_requirements() -> list:
+    with open('requirements.txt', 'r') as f:
+        return [req.strip() for req in f.readlines()]
+
 def main():
     prefect.context.setdefault("secrets", {})
     secrets = prefect.context.secrets
@@ -286,9 +299,12 @@ def main():
         # deploy to cloud (under the "alex" project)
         flow.deploy("test", 
                     # optional when locally run with agent
-                    registry_url="gcr.io/prefect-staging-5cd57f/alex-test-flows",
-                    python_dependencies=python_pip_requirements_from_project(),
+                    base_image="quay.io/wagoodman/prefect-arm:0.7.0-python3.7",
+                    # prefect_version="0.7.0",
+                    registry_url="quay.io/wagoodman/whats-up",
+                    python_dependencies=python_pip_requirements(),
                     # files=all_py_files(),
+                    local_image=True,
                     )
 
 if __name__ == '__main__':
