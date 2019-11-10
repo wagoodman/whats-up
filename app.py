@@ -268,12 +268,12 @@ def update_display(ac_vectors):
 
     ac_with_callsigns = [ac for ac in ac_vectors if ac.callsign != None]
 
-    proxy.update_row("whatsup", "0", f"# AC: {len(ac_with_callsigns)}")
+    proxy.update_row("whatsup", "0", f"AC : {len(ac_with_callsigns)}")
 
     rows = []
     cur_row = []
     for ac in ac_with_callsigns:
-        cur_row.append(ac)
+        cur_row.append(ac.callsign)
         if len(cur_row) == 2:
             rows.append('  '.join(cur_row))
             cur_row = []
