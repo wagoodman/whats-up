@@ -310,24 +310,24 @@ def main():
 
     schedule = IntervalSchedule(interval=timedelta(minutes=1))
 
-    with prefect.Flow("aircraft positions") as flow:
+    with prefect.Flow("whats-up") as flow:
         area = fetch_current_area()
         aircraft = fetch_above_aircraft(area=area)
         update_display(ac_vectors=aircraft)
 
         # run locally
-        flow.run()
+        # flow.run()
 
         # deploy to cloud (under the "alex" project)
-        # flow.deploy("test", 
-        #             # optional when locally run with agent
-        #             base_image="quay.io/wagoodman/prefect-arm:0.7.0-python3.7",
-        #             # prefect_version="0.7.0",
-        #             registry_url="quay.io/wagoodman/whats-up",
-        #             python_dependencies=python_pip_requirements(),
-        #             # files=all_py_files(),
-        #             local_image=True,
-        #             )
+        flow.deploy("test", 
+                    # optional when locally run with agent
+                    base_image="quay.io/wagoodman/prefect-arm:0.7.0-python3.7",
+                    # prefect_version="0.7.0",
+                    registry_url="quay.io/wagoodman",
+                    python_dependencies=python_pip_requirements(),
+                    # files=all_py_files(),
+                    local_image=True,
+                    )
 
 if __name__ == '__main__':
     main()
