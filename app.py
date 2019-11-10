@@ -310,7 +310,7 @@ def main():
 
     schedule = IntervalSchedule(interval=timedelta(minutes=1))
 
-    with prefect.Flow("whats-up") as flow:
+    with prefect.Flow("whats-up", schedule) as flow:
         area = fetch_current_area()
         aircraft = fetch_above_aircraft(area=area)
         update_display(ac_vectors=aircraft)
