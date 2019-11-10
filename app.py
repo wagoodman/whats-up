@@ -285,8 +285,8 @@ def update_display(ac_vectors):
         rows.append('  '.join(cur_row))
         cur_row = []
             
-    for row in rows:
-        proxy.update_row("aircraft", row, row)
+    for idx, row in enumerate(rows):
+        proxy.update_row("aircraft", str(idx), row)
 
     logger.info(f"Display complete!")
 
