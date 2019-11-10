@@ -4,11 +4,14 @@ import os
 import sys
 import pathlib
 import collections
+from datetime import timedelta
+from xmlrpc.client import ServerProxy
 
 import geocoder
 import toml
 import prefect
 from prefect.client import Secret
+from prefect.schedules import IntervalSchedule
 
 
 ### TMP TMP TMP
@@ -165,6 +168,7 @@ class OpenSkyApi(object):
         :param bbox: optionally retrieve state vectors within a bounding box. The bbox must be a tuple of exactly four values [min_latitude, max_latitude, min_longitude, max_latitude] each in WGS84 decimal degrees.
         :return: [StateVectors] if request was successful, None otherwise
         """
+        logger = prefect.context.get("logger")
         if not self._check_rate_limit(10, 5, self.get_states):
             logger.debug("Blocking request due to rate limit")
             return None
@@ -188,7 +192,10 @@ class OpenSkyApi(object):
                 raise ValueError("Invalid bounding box!")
 
         states_json = self._get_json("/states/all", self.get_states, params=params)
+        logger.info("States: " + repr(states_json))
         
+        if states_json['states'] is None:
+            return []
         return [AircraftState(*a) for a in states_json['states']]
 
 
@@ -216,7 +223,7 @@ def fetch_current_area():
     current_position.validate()
 
     # bounding box within x KM radius of here
-    area = position.surrounding_area(current_position, 10)
+    area = position.surrounding_area(current_position, 20)
     area.validate()
 
     return area
@@ -224,8 +231,8 @@ def fetch_current_area():
 @prefect.task
 def fetch_above_aircraft(area: position.Area):
     logger = prefect.context.get("logger")
-    username = Secret("opensky_username").get()
-    password = Secret("opensky_password").get()
+    username = os.environ['OPENSKY_USERNAME'] or Secret("opensky_username").get()
+    password = os.environ['OPENSKY_PASSWORD'] or Secret("opensky_password").get()
 
     if username == None or len(username) == 0:
         raise ValueError("no username provided")
@@ -246,13 +253,26 @@ def fetch_above_aircraft(area: position.Area):
 def update_display(ac_vectors):
     logger = prefect.context.get("logger")
 
-    ### tmp display code...
     for aircraft in ac_vectors:
         if aircraft.callsign != None:
             logger.info("%-10s (from: %s)" % (aircraft.callsign, opensky.PositionSource(aircraft.position_source)))
 
     logger.info(f"Num AC: {len(ac_vectors)}")
-    ### tmp display code
+
+    # log to inky screen service
+    with ServerProxy("http://swag-pi-1.lan:5000/", allow_none=True) as proxy:
+        proxy.register_buffer("whatsup", "lowerright")
+        proxy.clear_buffer("whatsup")
+
+    # for aircraft in ac_vectors:
+    #     if aircraft.callsign != None:
+    #         proxy.update_row("whatsup", aircraft.callsign, aircraft.callsign)
+
+    # last row
+    proxy.update_row("whatsup", "ZZZZZZZ", f"Num AC: {len(ac_vectors)}")
+
+    logger.info(f"Display complete!")
+
 
 def all_py_files() -> dict:
     # this is bad: we need to interrogate a failed docker build to determine where to place files
@@ -288,24 +308,26 @@ def main():
     secrets = prefect.context.secrets
     secrets['opensky_username'], secrets['opensky_password'] = os.environ['OPENSKY_USERNAME'], os.environ['OPENSKY_PASSWORD']
 
+    schedule = IntervalSchedule(interval=timedelta(minutes=1))
+
     with prefect.Flow("aircraft positions") as flow:
         area = fetch_current_area()
         aircraft = fetch_above_aircraft(area=area)
         update_display(ac_vectors=aircraft)
 
         # run locally
-        # flow.run()
+        flow.run()
 
         # deploy to cloud (under the "alex" project)
-        flow.deploy("test", 
-                    # optional when locally run with agent
-                    base_image="quay.io/wagoodman/prefect-arm:0.7.0-python3.7",
-                    # prefect_version="0.7.0",
-                    registry_url="quay.io/wagoodman/whats-up",
-                    python_dependencies=python_pip_requirements(),
-                    # files=all_py_files(),
-                    local_image=True,
-                    )
+        # flow.deploy("test", 
+        #             # optional when locally run with agent
+        #             base_image="quay.io/wagoodman/prefect-arm:0.7.0-python3.7",
+        #             # prefect_version="0.7.0",
+        #             registry_url="quay.io/wagoodman/whats-up",
+        #             python_dependencies=python_pip_requirements(),
+        #             # files=all_py_files(),
+        #             local_image=True,
+        #             )
 
 if __name__ == '__main__':
     main()
