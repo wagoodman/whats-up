@@ -261,15 +261,16 @@ def update_display(ac_vectors):
 
     # log to inky screen service
     with ServerProxy("http://swag-pi-1.lan:5000/", allow_none=True) as proxy:
-        proxy.register_buffer("whatsup", "center", 26)
+        proxy.register_buffer("whatsup", "centerleft", 26)
+        proxy.register_buffer("aircraft", "upperright", 12)
         proxy.clear_buffer("whatsup")
+        proxy.clear_buffer("aircraft")
 
-    # for aircraft in ac_vectors:
-    #     if aircraft.callsign != None:
-    #         proxy.update_row("whatsup", aircraft.callsign, aircraft.callsign)
+    proxy.update_row("whatsup", "0", f"Aircraft: {len(ac_vectors)}")
 
-    # last row
-    proxy.update_row("whatsup", "ZZZZZZZ", f"Aircraft: {len(ac_vectors)}")
+    for aircraft in ac_vectors:
+        if aircraft.callsign != None:
+            proxy.update_row("aircraft", aircraft.callsign, aircraft.callsign)
 
     logger.info(f"Display complete!")
 
