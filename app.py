@@ -223,7 +223,7 @@ def fetch_current_area():
     current_position.validate()
 
     # bounding box within x KM radius of here
-    area = position.surrounding_area(current_position, 25)
+    area = position.surrounding_area(current_position, 35)
     area.validate()
 
     return area
@@ -269,7 +269,7 @@ def update_display(ac_vectors):
 
     proxy.update_row("title", "0", "Aircraft:")
 
-    ac_with_callsigns = [ac for ac in ac_vectors if ac.callsign != None]
+    ac_with_callsigns = [ac for ac in ac_vectors if ac.callsign != None and len(str(ac.callsign).strip()) > 0]
 
     proxy.update_row("whatsup", "0", f" {len(ac_with_callsigns)}")
 
@@ -278,11 +278,11 @@ def update_display(ac_vectors):
     for ac in ac_with_callsigns:
         cur_row.append(ac.callsign)
         if len(cur_row) == 3:
-            rows.append('  '.join(cur_row))
+            rows.append(' '.join(cur_row))
             cur_row = []
     
     if len(cur_row) > 0:
-        rows.append('  '.join(cur_row))
+        rows.append(' '.join(cur_row))
         cur_row = []
             
     for idx, row in enumerate(rows):
