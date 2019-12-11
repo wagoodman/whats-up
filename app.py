@@ -13,7 +13,7 @@ import prefect
 from prefect import config
 from prefect.client import Secret
 from prefect.schedules import IntervalSchedule
-
+from prefect.runtimes import DevCLI
 
 import opensky
 import position
@@ -103,7 +103,8 @@ def main():
         aircraft = fetch_above_aircraft(area=area)
         update_display(ac_vectors=aircraft)
 
-        flow.cli()
+        runtime = DevCLI(flow=flow)
+        runtime.run()
 
 
 if __name__ == '__main__':
