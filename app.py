@@ -10,13 +10,15 @@ from xmlrpc.client import ServerProxy
 import geocoder
 import toml
 import prefect
+from prefect import config
 from prefect.client import Secret
 from prefect.schedules import IntervalSchedule
+
 
 import opensky
 import position
 
-@prefect.task
+@prefect.task()
 def fetch_current_area():
     # this is based on your current IP address
     current_position = position.Position(*geocoder.ip('me').latlng)
@@ -28,7 +30,7 @@ def fetch_current_area():
 
     return area
 
-@prefect.task
+@prefect.task()
 def fetch_above_aircraft(area: position.Area):
     logger = prefect.context.get("logger")
     username = os.environ.get('OPENSKY_USERNAME') or Secret("opensky_username").get()
@@ -49,7 +51,7 @@ def fetch_above_aircraft(area: position.Area):
     return result
 
 
-@prefect.task
+@prefect.task()
 def update_display(ac_vectors):
     logger = prefect.context.get("logger")
 
@@ -95,17 +97,14 @@ def update_display(ac_vectors):
 
 
 def main():
-    schedule = IntervalSchedule(interval=timedelta(minutes=1))
-    with prefect.Flow("whats-up", schedule) as flow:
+
+    with prefect.Flow("whats-up") as flow:
         area = fetch_current_area()
         aircraft = fetch_above_aircraft(area=area)
         update_display(ac_vectors=aircraft)
 
-        # run locally
-        # flow.run()
-        
-        # deploy to cloud
-        flow_id = flow.deploy("test")
+        flow.cli()
+
 
 if __name__ == '__main__':
     main()
